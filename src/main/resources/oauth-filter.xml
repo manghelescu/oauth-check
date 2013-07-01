@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.0.xsd">
+
+	<bean id="callbackUrl" class="java.lang.String">
+		<constructor-arg value="http://localhost:8080/oauth-check/callback.jsp" />
+	</bean>
+
+	<bean id="tokenExpirationSeconds" class="java.lang.Integer">
+		<constructor-arg value="3600"/>
+	</bean>
+
+	<bean id="facebookOAuthProviderConfig" class="com.threepillar.oauth.OAuthProviderConfig">
+		<property name="providerName" value="Facebook" />
+		<property name="applicationKey" value="198842343603643" />
+		<property name="applicationSecret" value="8679ef948937e137968fd6619c1a2c18" />
+		<property name="protectedUrl" value="https://graph.facebook.com/me?fields=email" />
+		<property name="scope" value="email" />
+		<property name="providerClass" value="org.scribe.builder.api.FacebookApi" />
+		<property name="baseAuthorizationUrl" value="" />
+		<property name="checkTokenBaseUrl" value="https://graph.facebook.com/oauth/access_token_info"/>
+		<property name="expirationSeconds" ref="tokenExpirationSeconds"/>
+		<property name="useRequestToken" value="false" />
+		<property name="useServiceAuthorizationUrlOnly" value="true" />
+	</bean>
+
+	<bean id="googleOAuthProviderConfig" class="com.threepillar.oauth.OAuthProviderConfig">
+		<property name="providerName" value="Google" />
+		<property name="applicationKey"
+			value="81795767834-2g9uvinteg0ikcihdoppaqkhqfq3pk5f.apps.googleusercontent.com" />
+		<property name="applicationSecret" value="2LUFnTjc4jGcq53nsT84EYkD" />
+		<property name="protectedUrl"
+			value="https://www.googleapis.com/oauth2/v1/userinfo?alt=json&amp;access_token=" />
+		<property name="scope"
+			value="https://www.googleapis.com/auth/userinfo.email" />
+		<property name="providerClass" value="org.scribe.builder.api.GoogleApi" />
+		<property name="baseAuthorizationUrl"
+			value="https://accounts.google.com/o/oauth2/auth?response_type=token&amp;state=tokenObtained&amp;approval_prompt=force" />		
+		<property name="checkTokenBaseUrl" value="https://www.googleapis.com/oauth2/v1/tokeninfo?access_token="/>
+		<property name="expirationSeconds" ref="tokenExpirationSeconds"/>
+		<property name="useRequestToken" value="true" />
+		<property name="useServiceAuthorizationUrlOnly" value="false" />
+	</bean>
+
+	<bean id="oauthProvidersConfigList" class="java.util.ArrayList">
+		<constructor-arg>
+			<list value-type="com.threepillar.oauth.OAuthProviderConfig">
+				<ref bean="facebookOAuthProviderConfig" />
+				<ref bean="googleOAuthProviderConfig" />
+			</list>
+		</constructor-arg>
+	</bean>
+
+	<bean id="facebookDataHandler" class="com.threepillar.oauth.handler.impl.FacebookDataHandler"/>
+	<bean id="googleDataHandler" class="com.threepillar.oauth.handler.impl.GoogleDataHandler"/>
+
+	<bean id="facebookOAuthProviderService" class="com.threepillar.oauth.OAuthProviderService">
+		<constructor-arg index="0" ref="facebookOAuthProviderConfig"/>
+		<constructor-arg index="1" ref="callbackUrl"/>
+		<property name="dataHandler" ref="facebookDataHandler"/>
+	</bean>
+
+	<bean id="googleOAuthProviderService" class="com.threepillar.oauth.OAuthProviderService">
+		<constructor-arg index="0" ref="googleOAuthProviderConfig"/>
+		<constructor-arg index="1" ref="callbackUrl"/>
+		<property name="dataHandler" ref="googleDataHandler"/>
+	</bean>
+
+	<bean id="oAuthProviderServices" class="java.util.HashMap">
+		<constructor-arg>
+			<map>
+				<entry key="Facebook" value-ref="facebookOAuthProviderService"/>
+				<entry key="Google" value-ref="googleOAuthProviderService"/>
+			</map>
+		</constructor-arg>
+	</bean>
+	
+	<bean id="oAuthAccessCache" class="com.threepillar.oauth.OAuthAccessCache"/>
+	
+	<bean id="cacheCleaner" class="com.threepillar.oauth.CacheCleaner">
+		<constructor-arg index="0" ref="oAuthAccessCache"/><!-- cache -->
+		<constructor-arg index="1" value="1200000"/><!-- pause between actions -->
+	</bean>
+	
+	<bean id="oAuthApi" class="com.threepillar.oauth.api.impl.OAuthApiImpl">
+		<property name="oAuthProviderServices" ref="oAuthProviderServices" />
+		<property name="oAuthAccessCache" ref="oAuthAccessCache"/>
+	</bean>	
+</beans>
